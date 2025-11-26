@@ -1,7 +1,7 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from datetime import datetime
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='assets', static_url_path='/assets')
 
 # Mock data - în memorie, fără bază de date
 USER_DATA = {

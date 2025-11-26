@@ -3,7 +3,7 @@
 
 {% block content %}
 <div x-data="{
-    messages: [{role: 'assistant', content: 'Hello! This is a demo. AI is not connected.', timestamp: Date.now()}],
+    messages: [{role: 'assistant', content: 'Hello! I am your health assistant. How can I help you today? ( ts just a demo )', timestamp: Date.now()}],
     input: '',
     
     async sendMessage() {
@@ -17,31 +17,35 @@
         setTimeout(() => {
             this.messages.push({
                 role: 'assistant',
-                content: 'This is a demo response. For the full version, AI will analyze your health data.',
+                content: 'Mark, your symptoms could be related to a combination of factors. Your sleep quality has been very poor, averaging around 3-4 hours with frequent awakenings, which can significantly impact your health. Additionally, you rarely hit your water consumption goal of 2L. These factors could contribute to feeling unwell. It is important to fix your habits and consult a healthcare professional if the symptoms persist.',
                 timestamp: Date.now()
             });
         }, 1000);
     }
 }">
     <h1 class="text-2xl font-bold text-gray-900 mb-4">Health Chat</h1>
-    
+
     <div class="space-y-4 mb-20" style="height: calc(100vh - 200px); overflow-y: auto;">
         <template x-for="msg in messages" :key="msg.timestamp">
             <div :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
                 <div :class="msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-white border'"
                      class="max-w-[80%] rounded-2xl px-4 py-3">
                     <p class="text-sm" x-text="msg.content"></p>
+                    <span class="block text-xs text-gray-400 mt-1"
+                          x-text="new Date(msg.timestamp).toLocaleTimeString('ro-RO', { hour:'2-digit', minute:'2-digit', hour12:false })">
+                    </span>
                 </div>
             </div>
         </template>
     </div>
-    
+
     <div class="fixed bottom-16 left-0 right-0 bg-white p-3 max-w-md mx-auto">
         <form @submit.prevent="sendMessage()" class="flex space-x-2">
             <input x-model="input" placeholder="Type..." class="flex-1 border rounded-xl px-3 py-2">
             <button type="submit" class="bg-blue-500 text-white p-3 rounded-xl">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                 </svg>
             </button>
         </form>
