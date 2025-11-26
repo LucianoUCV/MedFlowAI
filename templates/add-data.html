@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Add Data - MedFlowAI{% endblock %}
+
+{% block content %}
+<div x-data="{
+    activeTab: 'consum',
+    showSuccess: false,
+    
+    submitForm() {
+        this.showSuccess = true;
+        setTimeout(() => this.showSuccess = false, 2000);
+    }
+}">
+    <h1 class="text-2xl font-bold text-gray-900 mb-4">Add Health Data</h1>
+    
+    <div x-show="showSuccess" class="bg-green-500 text-white px-4 py-2 rounded-lg mb-4">
+        ✓ Data saved (demo mode)
+    </div>
+    
+    <!-- Tabs -->
+    <div class="bg-white rounded-2xl shadow p-1 mb-6">
+        <div class="flex space-x-1">
+            <button @click="activeTab = 'consum'" 
+                    :class="activeTab === 'consum' ? 'bg-orange-500 text-white' : 'text-gray-600'"
+                    class="flex-1 py-2 rounded-xl text-xs">🍽️ Food</button>
+            <button @click="activeTab = 'somn'"
+                    :class="activeTab === 'somn' ? 'bg-purple-500 text-white' : 'text-gray-600'"
+                    class="flex-1 py-2 rounded-xl text-xs">🌙 Sleep</button>
+            <button @click="activeTab = 'vitale'"
+                    :class="activeTab === 'vitale' ? 'bg-red-500 text-white' : 'text-gray-600'"
+                    class="flex-1 py-2 rounded-xl text-xs">❤️ Vitals</button>
+            <button @click="activeTab = 'sport'"
+                    :class="activeTab === 'sport' ? 'bg-green-500 text-white' : 'text-gray-600'"
+                    class="flex-1 py-2 rounded-xl text-xs">🏃 Activity</button>
+        </div>
+    </div>
+    
+    <!-- Forms -->
+    <div class="bg-white rounded-2xl shadow p-6">
+        <div x-show="activeTab === 'consum'">
+            <h3 class="font-bold mb-4">🍽️ Nutrition</h3>
+            <input type="number" placeholder="Meals" class="w-full border rounded-lg px-3 py-2 mb-3">
+            <input type="number" placeholder="Water (ml)" class="w-full border rounded-lg px-3 py-2 mb-3">
+            <button @click="submitForm()" class="w-full bg-orange-500 text-white py-3 rounded-lg">Save</button>
+        </div>
+        
+        <div x-show="activeTab === 'somn'">
+            <h3 class="font-bold mb-4">🌙 Sleep</h3>
+            <input type="number" placeholder="Hours" class="w-full border rounded-lg px-3 py-2 mb-3">
+            <button @click="submitForm()" class="w-full bg-purple-500 text-white py-3 rounded-lg">Save</button>
+        </div>
+        
+        <div x-show="activeTab === 'vitale'">
+            <h3 class="font-bold mb-4">❤️ Vitals</h3>
+            <input type="text" placeholder="Blood Pressure (120/80)" class="w-full border rounded-lg px-3 py-2 mb-3">
+            <input type="number" placeholder="Pulse" class="w-full border rounded-lg px-3 py-2 mb-3">
+            <button @click="submitForm()" class="w-full bg-red-500 text-white py-3 rounded-lg">Save</button>
+        </div>
+        
+        <div x-show="activeTab === 'sport'">
+            <h3 class="font-bold mb-4">🏃 Activity</h3>
+            <input type="text" placeholder="Type (Running, Gym...)" class="w-full border rounded-lg px-3 py-2 mb-3">
+            <input type="number" placeholder="Duration (minutes)" class="w-full border rounded-lg px-3 py-2 mb-3">
+            <button @click="submitForm()" class="w-full bg-green-500 text-white py-3 rounded-lg">Save</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

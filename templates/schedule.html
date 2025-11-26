@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Schedule - MedFlowAI{% endblock %}
+
+{% block content %}
+<div x-data="{
+    clinics: [],
+    
+    async init() {
+        const res = await fetch('/api/v1/cabinete');
+        const data = await res.json();
+        this.clinics = data.cabinete;
+    }
+}">
+    <h1 class="text-2xl font-bold mb-4">Schedule Appointment</h1>
+    
+    <div class="space-y-4">
+        <template x-for="clinic in clinics" :key="clinic.id">
+            <div class="bg-white rounded-2xl shadow-lg p-5">
+                <h3 class="font-bold text-lg" x-text="clinic.nume"></h3>
+                <p class="text-sm text-gray-600" x-text="clinic.categorie"></p>
+                <div class="flex items-center mt-2">
+                    <span x-text="'⭐'.repeat(Math.floor(clinic.rating))"></span>
+                    <span class="text-sm ml-2" x-text="clinic.rating"></span>
+                </div>
+                <button class="w-full bg-blue-500 text-white py-3 rounded-lg mt-4">
+                    Book Appointment (Demo)
+                </button>
+            </div>
+        </template>
+    </div>
+</div>
+{% endblock %}

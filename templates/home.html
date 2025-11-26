@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Home - MedFlowAI{% endblock %}
+
+{% block content %}
+<div x-data="{
+    score: 75,
+    status: 'Keep going!',
+    color: '#8B5CF6',
+    briefSummaries: {
+        'consum': '2 meals, 1.5L water',
+        'somn': '7h good sleep',
+        'vitale': 'BP: 120/80, HR: 72',
+        'sport': '30min running'
+    }
+}" class="space-y-6">
+
+    <div class="text-center">
+        <img src="/assets/logopreview1.png"
+             alt="MedFlowAI Logo"
+             class="w-48 mx-auto mb-4">
+
+        <h1 class="text-3xl font-bold text-gray-900">MedFlowAI</h1>
+        <p class="text-gray-600 mt-1">Welcome back, Mark!</p>
+    </div>
+
+    <!-- Progress Card -->
+    <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-2xl font-bold text-gray-900 mb-4" x-text="status"></h3>
+        <div class="relative">
+            <div class="w-full h-8 bg-gray-200 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-1000"
+                     :style="`width: ${score}%; background-color: ${color}`"></div>
+            </div>
+        </div>
+        <p class="text-gray-500 text-sm mt-3 text-center">Your health score today</p>
+    </div>
+
+    <!-- Today's Summary -->
+    <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Today's Activity</h3>
+        <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                <div>
+                    <p class="text-sm font-semibold">Nutrition</p>
+                    <p class="text-xs text-gray-500" x-text="briefSummaries.consum"></p>
+                </div>
+                <span class="text-2xl">🍽️</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                <div>
+                    <p class="text-sm font-semibold">Sleep</p>
+                    <p class="text-xs text-gray-500" x-text="briefSummaries.somn"></p>
+                </div>
+                <span class="text-2xl">😴</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                <div>
+                    <p class="text-sm font-semibold">Vitals</p>
+                    <p class="text-xs text-gray-500" x-text="briefSummaries.vitale"></p>
+                </div>
+                <span class="text-2xl">❤️</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div>
+                    <p class="text-sm font-semibold">Activity</p>
+                    <p class="text-xs text-gray-500" x-text="briefSummaries.sport"></p>
+                </div>
+                <span class="text-2xl">🏃</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
