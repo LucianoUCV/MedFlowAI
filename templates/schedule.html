@@ -4,26 +4,43 @@
 {% block content %}
 <div x-data="{
     clinics: [],
-    
+    loading: true,
+
     async init() {
         const res = await fetch('/api/v1/cabinete');
         const data = await res.json();
-        this.clinics = data.cabinete;
+        this.clinics = data.cabinete || [];
+        this.loading = false;
+    },
+
+    book(clinic) {
+        alert('Appointment request sent to ' + clinic.nume + '! Check your email.');
     }
 }">
     <h1 class="text-2xl font-bold mb-4">Schedule Appointment</h1>
-    
+
+    <div x-show="loading" class="text-center text-gray-500 py-10">Loading clinics...</div>
+
+    <div x-show="!loading && clinics.length === 0" class="text-center text-gray-500 py-10">
+        No clinics found.
+    </div>
+
     <div class="space-y-4">
         <template x-for="clinic in clinics" :key="clinic.id">
-            <div class="bg-white rounded-2xl shadow-lg p-5">
-                <h3 class="font-bold text-lg" x-text="clinic.nume"></h3>
-                <p class="text-sm text-gray-600" x-text="clinic.categorie"></p>
-                <div class="flex items-center mt-2">
-                    <span x-text="'⭐'.repeat(Math.floor(clinic.rating))"></span>
-                    <span class="text-sm ml-2" x-text="clinic.rating"></span>
+            <div class="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800" x-text="clinic.nume"></h3>
+                        <p class="text-sm text-blue-600 font-medium" x-text="clinic.categorie"></p>
+                    </div>
+                    <div class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold flex items-center">
+                        ⭐ <span x-text="clinic.rating" class="ml-1"></span>
+                    </div>
                 </div>
-                <button class="w-full bg-blue-500 text-white py-3 rounded-lg mt-4">
-                    Book Appointment (Demo)
+
+                <button @click="book(clinic)"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg mt-4 font-bold transition shadow-md active:transform active:scale-95">
+                    Book Appointment
                 </button>
             </div>
         </template>

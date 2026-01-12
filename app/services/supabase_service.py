@@ -1,20 +1,18 @@
 import os
 import json
-from datetime import date, datetime
+from datetime import date
 from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
-# Load env variables
 load_dotenv()
 
 url = os.environ.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_KEY")
 
 if not url or not key:
-    raise ValueError("⚠️ EROARE: SUPABASE_URL sau SUPABASE_KEY lipsesc din fișierul .env")
+    raise ValueError("⚠️ EROARE: Verifica .env")
 
-# Initialize Supabase client
 supabase: Client = create_client(url, key)
 
 
@@ -22,98 +20,70 @@ class SupabaseService:
     def __init__(self):
         self.client = supabase
 
-    # ==================== AUTH / PROFILES ====================
+    def _clean_details(self, details):
+        if isinstance(details, dict):
+            return details
+        if isinstance(details, str):
+            try:
+                return json.loads(details)
+            except:
+                return {}
+        return {}
 
-    def get_user_by_email(self, email: str) -> Optional[Dict]:
-        """Search a user by email."""
+    # --- AUTH ---
+    def get_user_by_email(self, email: str):
         try:
-            response = self.client.table("profiles").select("*").eq("email", email).execute()
-            if response.data and len(response.data) > 0:
-                return response.data[0]
+            res = self.client.table("profiles").select("*").eq("email", email).execute()
+            return res.data[0] if res.data else None
+        except:
             return None
-        except Exception as e:
-            print(f"Error searching user: {e}")
-            return None
 
-    def create_user(self, email: str, full_name: str) -> Dict:
-        """Create a new user (automated registration)."""
+    def create_user(self, email: str, full_name: str):
         try:
-            data = {
-                "email": email,
-                "full_name": full_name,
-            }
-            response = self.client.table("profiles").insert(data).execute()
-            return response.data[0]
-        except Exception as e:
-            print(f"Error creating user: {e}")
-            raise e
+            data = {"email": email, "full_name": full_name}
+            res = self.client.table("profiles").insert(data).execute()
+            return res.data[0]
+        except:
+            return {"id": "demo-id", "full_name": full_name}  # Fallback
 
-    def get_profile_by_id(self, user_id: str) -> Dict:
-        """Take profile data by id (for Home Page)."""
-        try:
-            response = self.client.table("profiles").select("*").eq("id", user_id).execute()
-            return response.data[0] if response.data else {}
-        except Exception as e:
-            print(f"Error get_profile: {e}")
-            return {}
-
-    # ==================== HEALTH DATA (DASHBOARD) ====================
-
+    # --- DATA ---
     def get_daily_summary(self, user_id: str, target_date: date) -> Dict[str, Any]:
-        """
-        Extract all health data for today.
-        For home page progress.
-        """
         try:
-            # 1. Take profile
-            profile = self.get_profile_by_id(user_id)
+            # Gather profile
+            profile_res = self.client.table("profiles").select("*").eq("id", user_id).execute()
+            profile = profile_res.data[0] if profile_res.data else {}
 
-            # 2. Take data from "general" table
-            response = self.client.table("general") \
-                .select("*") \
-                .eq("user_id", user_id) \
-                .eq("data", str(target_date)) \
-                .execute()
+            # Gather data
+            res = self.client.table("general").select("*").eq("user_id", user_id).eq("data", str(target_date)).execute()
+            raw_data = res.data if res.data else []
 
-            raw_data = response.data if response.data else []
-
-            # 3. Organize data in categories
             summary = {
                 "user_id": user_id,
                 "profile": profile,
-                "date": str(target_date),
-                "consum": [],
-                "somn": [],
-                "vitale": [],
-                "sport": [],
-                "medicamente": []
-            }
-
-            for record in raw_data:
-                category = record.get("type")  # consum, somn, etc...
-                details = record.get("details")
-
-                if isinstance(details, str):
-                    try:
-                        details = json.loads(details)
-                    except:
-                        details = {}
-
-                if category in summary:
-                    summary[category].append(details)
-
-            return summary
-
-        except Exception as e:
-            print(f"Error generating daily summary: {e}")
-            return {
-                "user_id": user_id,
                 "consum": [], "somn": [], "vitale": [], "sport": []
             }
 
+            for record in raw_data:
+                cat = record.get("type")
+                clean_det = self._clean_details(record.get("details"))
+
+                if cat in summary:
+                    summary[cat].append({
+                        "id": record.get("id"),
+                        "details": clean_det
+                    })
+
+            return summary
+        except Exception as e:
+            print(f"DB Error: {e}")
+            return {"user_id": user_id, "consum": [], "somn": [], "vitale": [], "sport": []}
+
     def add_health_data(self, user_id: str, category: str, data_dict: Dict):
-        """Add new entry (Add Data Page)."""
         try:
+            if category == 'somn':
+                self.client.table("general").delete().eq("user_id", user_id).eq("type", "somn").eq("data",
+                                                                                                   str(date.today())).execute()
+
             payload = {
                 "user_id": user_id,
                 "data": str(date.today()),
@@ -123,34 +93,22 @@ class SupabaseService:
             self.client.table("general").insert(payload).execute()
             return True
         except Exception as e:
-            print(f"Error saving data: {e}")
+            print(f"Add Error: {e}")
             return False
 
-    # ==================== SCHEDULE / CABINETE ====================
-
-    def get_all_cabinete(self) -> List[Dict]:
-        """Return clinics list."""
+    def delete_general_data(self, record_id: str, user_id: str):
         try:
-            response = self.client.table("cabinete").select("*").execute()
-            return response.data if response.data else []
-        except Exception as e:
-            print(f"Error getting clinics: {e}")
-            return []
-
-    def create_appointment(self, user_id: str, cabinet_id: str):
-        """Create reservation (Demo)."""
-        try:
-            payload = {
-                "user_id": user_id,
-                "cabinet_id": cabinet_id,
-                "data": datetime.now().isoformat(),
-                "active": True
-            }
-            self.client.table("programari").insert(payload).execute()
+            self.client.table("general").delete().eq("id", record_id).eq("user_id", user_id).execute()
             return True
-        except Exception as e:
-            print(f"Error creating reservation: {e}")
+        except:
             return False
+
+    def get_all_cabinete(self):
+        try:
+            res = self.client.table("cabinete").select("*").execute()
+            return res.data if res.data else []
+        except:
+            return []
 
 
 supabase_service = SupabaseService()

@@ -3,67 +3,43 @@
 
 {% block content %}
 <div x-data="{
-    userId: '70b8c710-b86e-4307-ab97-fbb95a4c66d9',
-    score: 75,
-    status: 'Keep going!',
+    score: {{ score }},
+    status: 'Calculating...',
     color: '#8B5CF6',
     showFeedback: false,
     feedback: '',
-    briefSummaries: {
-        'consum': '2 meals, 1.5L water',
-        'somn': '7h good sleep',
-        'vitale': 'BP: 120/80, HR: 72',
-        'sport': '30min running'
-    },
     loading: false,
+    briefSummaries: {
+        'consum': '{{ consum_txt }}',
+        'somn': '{{ somn_txt }}',
+        'vitale': '{{ vitale_txt }}',
+        'sport': '{{ sport_txt }}'
+    },
 
     getColorForScore(score) {
         if (score >= 80) return '#10B981';
         if (score >= 50) return '#8B5CF6';
-        return '#EF4444';
+        if (score > 0) return '#EF4444';
+        return '#9CA3AF'; // Gri pt 0
     },
 
     getStatusForScore(score) {
+        if (score == 0) return 'Start logging data!';
         if (score >= 80) return 'Crushing it!';
         if (score >= 50) return 'Keep going!';
         return 'Need some care';
     },
 
     async generateFeedback() {
-        if (this.feedback) {
-            this.showFeedback = true;
-            return;
-        }
-
+        if (this.feedback) { this.showFeedback = true; return; }
         this.loading = true;
-
-        // Mock feedback - simulate AI response
-        setTimeout(() => {
-            this.feedback = `**Health Analysis Summary**
-
-Based on your current data, here's what I observe:
-
-**Positive Points:**
-- Your vital signs (BP: 120/80, HR: 72) are within healthy range
-- Good hydration levels with 1.5L water intake
-- Regular physical activity (30min running)
-- Decent sleep quality (7 hours)
-
-**Areas for Improvement:**
-- Consider increasing meal frequency to 3-4 meals per day for better metabolism
-- Try to maintain consistent sleep schedule
-- Increase water intake to 2L+ for optimal hydration
-
-**Recommendations:**
-- Continue your current exercise routine
-- Monitor blood pressure weekly
-- Consider adding more vegetables to your diet
-
-Overall health score: **75/100** - You're doing well! Keep it up! 💪`;
-
-            this.loading = false;
+        try {
+            const res = await fetch('/api/v1/generate_alert');
+            const data = await res.json();
+            this.feedback = data.feedback;
             this.showFeedback = true;
-        }, 1500);
+        } catch(e) { console.error(e); }
+        this.loading = false;
     },
 
     init() {
@@ -72,173 +48,104 @@ Overall health score: **75/100** - You're doing well! Keep it up! 💪`;
     }
 }" class="space-y-6">
 
-    <!-- Logo and Header -->
     <div class="text-center">
-        <img src="/assets/logopreview1.png"
-             alt="MedFlowAI Logo"
-             class="w-75 mx-auto mb-4"
-             onerror="this.style.display='none'">
-        <p class="text-gray-600">Welcome back, Mark!</p>
+        <img src="/assets/logopreview1.png" alt="Logo" class="w-75 mx-auto mb-4" onerror="this.style.display='none'">
+        <div class="flex flex-col items-center justify-center space-y-2">
+            <p class="text-gray-600 text-sm">Welcome back,</p>
+            <h2 class="text-xl font-bold text-gray-900 leading-none">{{ name }}</h2>
+
+            <a href="/logout"
+               class="mt-2 inline-flex items-center space-x-1 px-4 py-1.5 border border-red-200 bg-red-50 text-red-500 rounded-full text-xs font-bold hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-300 group">
+                <span>Log Out</span>
+                <svg class="w-3 h-3 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+            </a>
+        </div>
     </div>
 
-    <!-- Progress Card -->
     <div class="bg-white rounded-2xl shadow-lg p-6">
         <div>
             <h2 class="text-gray-600 text-sm font-medium mb-2">Logging Progress</h2>
             <h3 class="text-2xl font-bold text-gray-900 mb-4" x-text="status"></h3>
 
-            <!-- Horizontal Progress Bar with Percentage -->
-        <div class="relative">
-            <!-- Background bar -->
-            <div class="w-full h-8 bg-gray-200 rounded-full overflow-hidden">
-                <!-- Progress fill -->
-                <div class="h-full rounded-full transition-all duration-1000 ease-out"
+            <div class="relative w-full h-8 bg-gray-200 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-1000 ease-out flex items-center justify-end pr-2"
                      :style="`width: ${score}%; background-color: ${color}`">
+                     <span x-show="score > 15" class="text-white text-sm font-bold drop-shadow-md" x-text="score + '%'"></span>
+                </div>
+
+                <div x-show="score <= 15" class="absolute inset-0 flex items-center justify-center">
+                    <span class="text-gray-600 text-sm font-bold" x-text="score + '%'"></span>
                 </div>
             </div>
-
-            <!-- Percentage -->
-            <div class="absolute top-1/2 transform -translate-y-1/2 transition-all duration-1000"
-                 :style="`left: ${score}%`">
-                <span class="inline-block -ml-12 text-white text-sm font-bold drop-shadow-lg"
-                      x-text="score + '%'"></span>
-            </div>
-        </div>
 
             <p class="text-gray-500 text-sm mt-3 text-center">Your health score today</p>
         </div>
     </div>
 
-    <!-- Today's Summary -->
     <div class="bg-white rounded-2xl shadow-lg p-6">
         <h3 class="text-lg font-bold text-gray-900 mb-4">You've logged today</h3>
-
         <div class="space-y-3">
-            <!-- Nutrition -->
             <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                        </svg>
-                    </div>
+                    <span class="text-2xl">🍽️</span>
                     <div>
                         <p class="text-sm font-semibold text-gray-700">Nutrition</p>
                         <p class="text-xs text-gray-500" x-text="briefSummaries.consum"></p>
                     </div>
                 </div>
-                <span class="text-2xl">🍽️</span>
             </div>
-
-            <!-- Sleep -->
             <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                        </svg>
-                    </div>
+                    <span class="text-2xl">😴</span>
                     <div>
                         <p class="text-sm font-semibold text-gray-700">Sleep</p>
                         <p class="text-xs text-gray-500" x-text="briefSummaries.somn"></p>
                     </div>
                 </div>
-                <span class="text-2xl">😴</span>
             </div>
-
-            <!-- Vitals -->
             <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                        </svg>
-                    </div>
-                    <div class="flex-1">
+                    <span class="text-2xl">❤️</span>
+                    <div>
                         <p class="text-sm font-semibold text-gray-700">Vitals</p>
                         <p class="text-xs text-gray-500" x-text="briefSummaries.vitale"></p>
                     </div>
                 </div>
-                <span class="text-2xl">❤️</span>
             </div>
-
-            <!-- Activity -->
             <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                    </div>
+                    <span class="text-2xl">🏃</span>
                     <div>
                         <p class="text-sm font-semibold text-gray-700">Activity</p>
                         <p class="text-xs text-gray-500" x-text="briefSummaries.sport"></p>
                     </div>
                 </div>
-                <span class="text-2xl">🏃</span>
             </div>
         </div>
     </div>
 
-    <!-- Get Status Button -->
     <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white">
-        <h3 class="text-lg font-bold mb-2">Want detailed feedback?</h3>
-        <p class="text-sm text-blue-100 mb-4">Get AI-powered health insights based on your today's data</p>
-
-        <button @click="generateFeedback()"
-                :disabled="loading"
-                class="w-full bg-white text-blue-600 font-semibold py-3 px-6 rounded-lg hover:bg-blue-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2">
-            <!-- Normal state -->
-            <template x-if="!loading && !showFeedback">
-                <span>Get Your Status</span>
-            </template>
-
-            <!-- Loading state -->
-            <template x-if="loading">
-                <span class="flex items-center space-x-2">
-                    <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Analyzing...</span>
-                </span>
-            </template>
-
-            <!-- Success state -->
-            <template x-if="!loading && showFeedback">
-                <span>✓ View Feedback</span>
-            </template>
+        <button @click="generateFeedback()" :disabled="loading"
+                class="w-full bg-white text-blue-600 font-bold py-3 px-6 rounded-lg hover:bg-blue-50 transition flex justify-center items-center">
+            <span x-show="!loading && !showFeedback">Get Your Status</span>
+            <span x-show="loading">Analyzing...</span>
+            <span x-show="!loading && showFeedback">✓ View Feedback</span>
         </button>
     </div>
 
-    <!-- Feedback Card -->
     <template x-if="showFeedback && feedback">
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-            <div class="text-center">
-                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                    </svg>
-                </div>
-                <h4 class="text-lg font-bold text-gray-900 mb-3">AI Health Feedback</h4>
-
-                <!-- Markdown-style rendering -->
-                <div class="text-left text-gray-700 text-sm leading-relaxed space-y-2">
-                    <template x-for="(line, index) in feedback.split('\n')" :key="index">
-                        <p x-show="line.trim()"
-                           :class="{
-                               'font-bold text-base mt-4': line.startsWith('**') && line.endsWith('**'),
-                               'font-semibold mt-2': line.startsWith('**') && !line.endsWith('**'),
-                               'ml-4': line.startsWith('-')
-                           }"
-                           x-html="line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')"></p>
-                    </template>
-                </div>
+        <div class="bg-white rounded-2xl shadow-lg p-6 mt-4">
+            <h4 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Analysis Report</h4>
+            <div class="text-sm text-gray-700 space-y-2">
+                <template x-for="(line, index) in feedback.split('\n')" :key="index">
+                    <p x-html="line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')" class="min-h-[10px]"></p>
+                </template>
             </div>
         </div>
     </template>
 
-    <!-- Quick Actions -->
     <div class="grid grid-cols-2 gap-4">
         <a href="/chat" class="bg-white rounded-xl shadow p-4 text-center hover:shadow-lg transition">
             <div class="text-3xl mb-2">💬</div>
@@ -249,6 +156,5 @@ Overall health score: **75/100** - You're doing well! Keep it up! 💪`;
             <p class="text-sm font-semibold text-gray-700">Add Data</p>
         </a>
     </div>
-
 </div>
 {% endblock %}

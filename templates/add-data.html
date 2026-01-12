@@ -5,63 +5,110 @@
 <div x-data="{
     activeTab: 'consum',
     showSuccess: false,
-    
-    submitForm() {
+    todayEntries: { consum: [], somn: [], vitale: [], sport: [] },
+    formData: { mese: '', lichide: '', ore_somn: '', tensiune: '', puls: '', sport_tip: '', sport_durata: '' },
+
+    async init() { await this.fetchTodayData(); },
+
+    async fetchTodayData() {
+        const res = await fetch('/api/v1/today_data');
+        this.todayEntries = await res.json();
+    },
+
+    async submitForm() {
+        let payload = {};
+        if (this.activeTab === 'consum') {
+            payload = { mese: Number(this.formData.mese), lichide_ml: Number(this.formData.lichide) };
+        } else if (this.activeTab === 'somn') {
+            payload = { ore_somn: Number(this.formData.ore_somn) };
+        } else if (this.activeTab === 'vitale') {
+            payload = { tensiune: this.formData.tensiune, puls: Number(this.formData.puls) };
+        } else if (this.activeTab === 'sport') {
+            payload = { tip: this.formData.sport_tip || 'Activity', durata: Number(this.formData.sport_durata) };
+        }
+
+        await fetch('/api/v1/add_health_data', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ category: this.activeTab, data: payload })
+        });
+
         this.showSuccess = true;
+        this.formData = { mese: '', lichide: '', ore_somn: '', tensiune: '', puls: '', sport_tip: '', sport_durata: '' };
+        await this.fetchTodayData();
         setTimeout(() => this.showSuccess = false, 2000);
+    },
+
+    async deleteEntry(id) {
+        if(!confirm('Stergi?')) return;
+        await fetch('/api/v1/delete_data', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id: id })
+        });
+        await this.fetchTodayData();
     }
 }">
-    <h1 class="text-2xl font-bold text-gray-900 mb-4">Add Health Data</h1>
-    
-    <div x-show="showSuccess" class="bg-green-500 text-white px-4 py-2 rounded-lg mb-4">
-        ✓ Data saved (demo mode)
+    <h1 class="text-2xl font-bold text-gray-900 mb-4">Log Health Data</h1>
+    <div x-show="showSuccess" class="bg-green-100 text-green-700 p-3 rounded mb-4 font-bold text-center">✓ Saved!</div>
+
+    <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+        <button @click="activeTab = 'consum'" :class="activeTab === 'consum' ? 'bg-orange-500 text-white' : 'bg-gray-200'" class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap">🍽️ Food</button>
+        <button @click="activeTab = 'somn'" :class="activeTab === 'somn' ? 'bg-purple-500 text-white' : 'bg-gray-200'" class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap">🌙 Sleep</button>
+        <button @click="activeTab = 'vitale'" :class="activeTab === 'vitale' ? 'bg-red-500 text-white' : 'bg-gray-200'" class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap">❤️ Vitals</button>
+        <button @click="activeTab = 'sport'" :class="activeTab === 'sport' ? 'bg-green-500 text-white' : 'bg-gray-200'" class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap">🏃 Sport</button>
     </div>
-    
-    <!-- Tabs -->
-    <div class="bg-white rounded-2xl shadow p-1 mb-6">
-        <div class="flex space-x-1">
-            <button @click="activeTab = 'consum'" 
-                    :class="activeTab === 'consum' ? 'bg-orange-500 text-white' : 'text-gray-600'"
-                    class="flex-1 py-2 rounded-xl text-xs">🍽️ Food</button>
-            <button @click="activeTab = 'somn'"
-                    :class="activeTab === 'somn' ? 'bg-purple-500 text-white' : 'text-gray-600'"
-                    class="flex-1 py-2 rounded-xl text-xs">🌙 Sleep</button>
-            <button @click="activeTab = 'vitale'"
-                    :class="activeTab === 'vitale' ? 'bg-red-500 text-white' : 'text-gray-600'"
-                    class="flex-1 py-2 rounded-xl text-xs">❤️ Vitals</button>
-            <button @click="activeTab = 'sport'"
-                    :class="activeTab === 'sport' ? 'bg-green-500 text-white' : 'text-gray-600'"
-                    class="flex-1 py-2 rounded-xl text-xs">🏃 Activity</button>
+
+    <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+        <div x-show="activeTab === 'consum'" class="space-y-4">
+            <input x-model="formData.mese" type="number" placeholder="Meals" class="w-full border p-2 rounded">
+            <input x-model="formData.lichide" type="number" placeholder="Water (ml)" class="w-full border p-2 rounded">
+            <button @click="submitForm()" class="w-full bg-orange-500 text-white py-3 rounded-lg font-bold">Add</button>
+
+            <div class="border-t pt-2 space-y-2">
+                <template x-for="e in todayEntries.consum" :key="e.id">
+                    <div class="flex justify-between bg-gray-50 p-2 rounded text-sm">
+                        <span x-text="(e.details.mese||0) + ' meals, ' + (e.details.lichide_ml||0) + ' ml'"></span>
+                        <button @click="deleteEntry(e.id)" class="text-red-500 font-bold">✕</button>
+                    </div>
+                </template>
+            </div>
         </div>
-    </div>
-    
-    <!-- Forms -->
-    <div class="bg-white rounded-2xl shadow p-6">
-        <div x-show="activeTab === 'consum'">
-            <h3 class="font-bold mb-4">🍽️ Nutrition</h3>
-            <input type="number" placeholder="Meals" class="w-full border rounded-lg px-3 py-2 mb-3">
-            <input type="number" placeholder="Water (ml)" class="w-full border rounded-lg px-3 py-2 mb-3">
-            <button @click="submitForm()" class="w-full bg-orange-500 text-white py-3 rounded-lg">Save</button>
+
+        <div x-show="activeTab === 'somn'" class="space-y-4">
+            <input x-model="formData.ore_somn" type="number" placeholder="Hours" class="w-full border p-2 rounded">
+            <button @click="submitForm()" class="w-full bg-purple-500 text-white py-3 rounded-lg font-bold">Update</button>
+             <div class="border-t pt-2" x-show="todayEntries.somn.length">
+                <div class="bg-purple-50 p-2 rounded text-sm font-bold" x-text="(todayEntries.somn[0].details.ore_somn||0) + 'h logged'"></div>
+            </div>
         </div>
-        
-        <div x-show="activeTab === 'somn'">
-            <h3 class="font-bold mb-4">🌙 Sleep</h3>
-            <input type="number" placeholder="Hours" class="w-full border rounded-lg px-3 py-2 mb-3">
-            <button @click="submitForm()" class="w-full bg-purple-500 text-white py-3 rounded-lg">Save</button>
+
+        <div x-show="activeTab === 'vitale'" class="space-y-4">
+            <input x-model="formData.tensiune" placeholder="BP" class="w-full border p-2 rounded">
+            <input x-model="formData.puls" placeholder="Pulse" class="w-full border p-2 rounded">
+            <button @click="submitForm()" class="w-full bg-red-500 text-white py-3 rounded-lg font-bold">Add</button>
+             <div class="border-t pt-2 space-y-2">
+                <template x-for="e in todayEntries.vitale" :key="e.id">
+                    <div class="flex justify-between bg-gray-50 p-2 rounded text-sm">
+                        <span x-text="'BP: ' + (e.details.tensiune||'-') + ', HR: ' + (e.details.puls||'-')"></span>
+                        <button @click="deleteEntry(e.id)" class="text-red-500 font-bold">✕</button>
+                    </div>
+                </template>
+            </div>
         </div>
-        
-        <div x-show="activeTab === 'vitale'">
-            <h3 class="font-bold mb-4">❤️ Vitals</h3>
-            <input type="text" placeholder="Blood Pressure (120/80)" class="w-full border rounded-lg px-3 py-2 mb-3">
-            <input type="number" placeholder="Pulse" class="w-full border rounded-lg px-3 py-2 mb-3">
-            <button @click="submitForm()" class="w-full bg-red-500 text-white py-3 rounded-lg">Save</button>
-        </div>
-        
-        <div x-show="activeTab === 'sport'">
-            <h3 class="font-bold mb-4">🏃 Activity</h3>
-            <input type="text" placeholder="Type (Running, Gym...)" class="w-full border rounded-lg px-3 py-2 mb-3">
-            <input type="number" placeholder="Duration (minutes)" class="w-full border rounded-lg px-3 py-2 mb-3">
-            <button @click="submitForm()" class="w-full bg-green-500 text-white py-3 rounded-lg">Save</button>
+
+        <div x-show="activeTab === 'sport'" class="space-y-4">
+            <input x-model="formData.sport_tip" placeholder="Type" class="w-full border p-2 rounded">
+            <input x-model="formData.sport_durata" type="number" placeholder="Min" class="w-full border p-2 rounded">
+            <button @click="submitForm()" class="w-full bg-green-500 text-white py-3 rounded-lg font-bold">Add</button>
+             <div class="border-t pt-2 space-y-2">
+                <template x-for="e in todayEntries.sport" :key="e.id">
+                    <div class="flex justify-between bg-gray-50 p-2 rounded text-sm">
+                        <span x-text="(e.details.tip||'Activity') + ' (' + (e.details.durata||0) + ' min)'"></span>
+                        <button @click="deleteEntry(e.id)" class="text-red-500 font-bold">✕</button>
+                    </div>
+                </template>
+            </div>
         </div>
     </div>
 </div>

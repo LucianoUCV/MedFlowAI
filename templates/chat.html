@@ -8,19 +8,21 @@
     
     async sendMessage() {
         if (!this.input.trim()) return;
-        
         this.messages.push({role: 'user', content: this.input, timestamp: Date.now()});
-        const q = this.input;
-        this.input = '';
-        
-        // Mock response
-        setTimeout(() => {
-            this.messages.push({
-                role: 'assistant',
-                content: 'Mark, your symptoms could be related to a combination of factors. Your sleep quality has been very poor, averaging around 3-4 hours with frequent awakenings, which can significantly impact your health. Additionally, you rarely hit your water consumption goal of 2L. These factors could contribute to feeling unwell. It is important to fix your habits and consult a healthcare professional if the symptoms persist.',
-                timestamp: Date.now()
-            });
-        }, 1000);
+
+        const formData = new FormData();
+        formData.append('question', this.input);
+
+        this.input = ''; // clear
+
+        const res = await fetch('/ask', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        this.messages.push({
+            role: 'assistant',
+            content: data.generated_feedback,
+            timestamp: Date.now()
+        });
     }
 }">
     <h1 class="text-2xl font-bold text-gray-900 mb-4">Health Chat</h1>
